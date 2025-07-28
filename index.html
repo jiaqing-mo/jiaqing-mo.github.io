@@ -154,6 +154,51 @@
             color: #333;
         }
         
+        .country-stats {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .country-stats h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            font-weight: 500;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
         .chart-container {
             width: 100%;
             height: 500px;
@@ -249,6 +294,27 @@
             <div class="chart-layout">
                 <div id="chart" class="main-chart chart-container scene-transition"></div>
                 <div class="detail-charts" style="display: none;">
+                    <div class="country-stats">
+                        <h3 id="country-name">Country Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Development Status:</span>
+                                <span id="country-status" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Latest Life Expectancy:</span>
+                                <span id="country-life-expectancy" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Latest GDP per capita:</span>
+                                <span id="country-gdp" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Latest Schooling:</span>
+                                <span id="country-schooling" class="stat-value">-</span>
+                            </div>
+                        </div>
+                    </div>
                     <div class="chart-selector">
                         <label for="trend-selector">Select Trend:</label>
                         <select id="trend-selector" onchange="updateDetailChart()">
@@ -635,6 +701,9 @@
             const detailCharts = document.querySelector('.detail-charts');
             detailCharts.style.display = 'flex';
             
+            // Update country statistics
+            updateCountryStats(country);
+            
             // Clear and create both detail charts
             d3.select('#life-expectancy-chart').html('');
             d3.select('#schooling-chart').html('');
@@ -643,6 +712,24 @@
             
             // Show the currently selected chart type
             updateDetailChart();
+        }
+        
+        function updateCountryStats(country) {
+            // Get the latest data for the selected country
+            const countryData = narrativeState.data.filter(d => d.country === country);
+            
+            if (countryData.length === 0) return;
+            
+            // Get the latest year's data
+            const latestData = d3.max(countryData, d => d.year);
+            const latestCountryData = countryData.find(d => d.year === latestData);
+            
+            // Update the statistics display
+            document.getElementById('country-name').textContent = `${country} Statistics`;
+            document.getElementById('country-status').textContent = latestCountryData.status;
+            document.getElementById('country-life-expectancy').textContent = `${latestCountryData.lifeExpectancy.toFixed(1)} years`;
+            document.getElementById('country-gdp').textContent = `$${d3.format('.0s')(latestCountryData.gdp)}`;
+            document.getElementById('country-schooling').textContent = `${latestCountryData.schooling.toFixed(1)} years`;
         }
         
         function updateDetailChart() {
