@@ -234,14 +234,14 @@
                     {
                         id: 'global-trend',
                         text: 'Global average life expectancy has been steadily increasing',
-                        position: { x: 400, y: 100 },
-                        arrow: 'down',
+                        position: { x: 50, y: 50 },
+                        arrow: 'right',
                         highlight: false
                     },
                     {
                         id: 'regional-variation',
                         text: 'Significant regional variations exist in life expectancy',
-                        position: { x: 200, y: 300 },
+                        position: { x: 50, y: 100 },
                         arrow: 'right',
                         highlight: true
                     }
@@ -256,14 +256,14 @@
                     {
                         id: 'developed-countries',
                         text: 'Developed countries show consistently higher life expectancy',
-                        position: { x: 600, y: 150 },
-                        arrow: 'left',
+                        position: { x: 50, y: 50 },
+                        arrow: 'right',
                         highlight: true
                     },
                     {
                         id: 'developing-gap',
                         text: 'Developing countries face significant challenges',
-                        position: { x: 200, y: 350 },
+                        position: { x: 50, y: 100 },
                         arrow: 'right',
                         highlight: true
                     }
@@ -278,15 +278,15 @@
                     {
                         id: 'education-impact',
                         text: 'Education shows strong correlation with life expectancy',
-                        position: { x: 500, y: 200 },
-                        arrow: 'down',
+                        position: { x: 50, y: 50 },
+                        arrow: 'right',
                         highlight: true
                     },
                     {
                         id: 'gdp-relationship',
                         text: 'GDP per capita also correlates with health outcomes',
-                        position: { x: 300, y: 300 },
-                        arrow: 'up',
+                        position: { x: 50, y: 100 },
+                        arrow: 'right',
                         highlight: false
                     }
                 ]
@@ -427,11 +427,11 @@
             
             // Add legend
             const legend = svg.append('g')
-                .attr('transform', `translate(${width - 200}, 20)`);
+                .attr('transform', `translate(${width - 350}, 20)`);
             
             const legendScale = d3.scaleLinear()
                 .domain([40, 85])
-                .range([0, 150]);
+                .range([0, 300]);
             
             const legendAxis = d3.axisBottom(legendScale)
                 .tickValues([40, 50, 60, 70, 80, 85])
@@ -459,7 +459,7 @@
                 .attr('stop-color', narrativeState.colorScales.lifeExpectancy(85));
             
             legend.append('rect')
-                .attr('width', 150)
+                .attr('width', 300)
                 .attr('height', 20)
                 .style('fill', 'url(#legendGradient)');
             
@@ -543,7 +543,7 @@
             
             // Add legend
             const legend = svg.append('g')
-                .attr('transform', `translate(${width - 100}, 20)`);
+                .attr('transform', `translate(50, 20)`);
             
             const statuses = [...new Set(countryData.map(d => d.status))];
             
@@ -634,6 +634,26 @@
                 .delay((d, i) => i * 30)
                 .attr('r', d => Math.sqrt(d.bmi) / 2)
                 .attr('opacity', 0.7);
+            
+            // Add legend
+            const legend = svg.append('g')
+                .attr('transform', `translate(50, 20)`);
+            
+            const statuses = [...new Set(countryData.map(d => d.status))];
+            
+            statuses.forEach((status, i) => {
+                const legendItem = legend.append('g')
+                    .attr('transform', `translate(0, ${i * 25})`);
+                
+                legendItem.append('circle')
+                    .attr('r', 5)
+                    .attr('fill', narrativeState.colorScales.development(status));
+                
+                legendItem.append('text')
+                    .attr('x', 15)
+                    .attr('y', 5)
+                    .text(status);
+            });
         }
         
         // ===== HELPER FUNCTIONS =====
