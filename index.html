@@ -318,6 +318,7 @@
                     <div class="chart-selector">
                         <label for="trend-selector">Select Trend:</label>
                         <select id="trend-selector" onchange="updateDetailChart()">
+                            <option value="">-- Select a trend --</option>
                             <option value="life-expectancy">Life Expectancy Trend</option>
                             <option value="schooling">Schooling Trend</option>
                         </select>
@@ -348,14 +349,14 @@
             {
                 id: 'developed-countries',
                 text: 'Developed countries show consistently higher life expectancy',
-                position: { x: 650, y: 450 },
+                position: { x: 650, y: 380 },
                 arrow: 'left',
                 highlight: true
             },
             {
                 id: 'developing-gap',
                 text: 'Developing countries face significant challenges',
-                position: { x: 650, y: 480 },
+                position: { x: 650, y: 410 },
                 arrow: 'left',
                 highlight: true
             }
@@ -511,7 +512,7 @@
             
             // Add legend
             const legend = svg.append('g')
-                .attr('transform', `translate(${width - 150}, ${height - 80})`);
+                .attr('transform', `translate(${width - 150}, ${height - 120})`);
             
             const statuses = [...new Set(countryData.map(d => d.status))];
             
@@ -740,9 +741,13 @@
             if (selector.value === 'life-expectancy') {
                 lifeExpectancyChart.style.display = 'block';
                 schoolingChart.style.display = 'none';
-            } else {
+            } else if (selector.value === 'schooling') {
                 lifeExpectancyChart.style.display = 'none';
                 schoolingChart.style.display = 'block';
+            } else {
+                // Hide both charts when no option is selected
+                lifeExpectancyChart.style.display = 'none';
+                schoolingChart.style.display = 'none';
             }
         }
         
