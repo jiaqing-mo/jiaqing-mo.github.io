@@ -1,1 +1,930 @@
-"Hello World" 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Expectancy Interactive Story</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3-annotation.v2.min.js"></script>
+    <script src="https://d3js.org/topojson.v3.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .slide {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin: 20px 0;
+            padding: 30px;
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+        
+        .slide.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .slide-title {
+            font-size: 2.5em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 300;
+        }
+        
+        .slide-subtitle {
+            font-size: 1.2em;
+            color: #7f8c8d;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .navigation {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .nav-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .nav-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #9b59b6);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .chart-container {
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        .legend {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .legend-item {
+            display: inline-block;
+            margin: 0 15px;
+            font-size: 14px;
+        }
+        
+        .legend-color {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border-radius: 3px;
+        }
+        
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .control-group {
+            display: inline-block;
+            margin: 0 20px;
+        }
+        
+        .control-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        select, input {
+            padding: 8px 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .interactive-note {
+            background: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .interactive-note h4 {
+            margin: 0 0 10px 0;
+            color: #2980b9;
+        }
+        
+        .interactive-note p {
+            margin: 0;
+            color: #34495e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+        
+        <div class="navigation">
+            <button class="nav-btn" id="prevBtn" onclick="previousSlide()">← Previous</button>
+            <button class="nav-btn" id="nextBtn" onclick="nextSlide()">Next →</button>
+        </div>
+        
+        <!-- Slide 1: Global Overview -->
+        <div class="slide active" id="slide1">
+            <h1 class="slide-title">Global Life Expectancy Trends</h1>
+            <p class="slide-subtitle">Explore how life expectancy has evolved across countries and regions</p>
+            
+            <div class="interactive-note">
+                <h4>💡 Interactive Features:</h4>
+                <p>• Hover over countries to see detailed information<br>
+                • Use the year slider to explore trends over time<br>
+                • Click on countries to highlight them</p>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label class="control-label">Year:</label>
+                    <input type="range" id="yearSlider" min="2000" max="2015" value="2015" step="1">
+                    <span id="yearValue">2015</span>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Color By:</label>
+                    <select id="colorBy">
+                        <option value="life_expectancy">Life Expectancy</option>
+                        <option value="status">Development Status</option>
+                        <option value="gdp">GDP</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="chart-container" id="mapContainer">
+                <div id="worldMap"></div>
+            </div>
+        </div>
+        
+        <!-- Slide 2: Regional Comparison -->
+        <div class="slide" id="slide2">
+            <h1 class="slide-title">Regional Life Expectancy Comparison</h1>
+            <p class="slide-subtitle">Compare life expectancy patterns across different regions and development statuses</p>
+            
+            <div class="interactive-note">
+                <h4>💡 Interactive Features:</h4>
+                <p>• Click on bars to see detailed breakdown<br>
+                • Use filters to focus on specific regions or time periods<br>
+                • Toggle between different metrics</p>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label class="control-label">Metric:</label>
+                    <select id="metricSelect">
+                        <option value="life_expectancy">Life Expectancy</option>
+                        <option value="adult_mortality">Adult Mortality</option>
+                        <option value="infant_deaths">Infant Deaths</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Group By:</label>
+                    <select id="groupBy">
+                        <option value="status">Development Status</option>
+                        <option value="region">Region</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="chart-container" id="barChartContainer">
+                <div id="barChart"></div>
+            </div>
+        </div>
+        
+        <!-- Slide 3: Health Factors Analysis -->
+        <div class="slide" id="slide3">
+            <h1 class="slide-title">Health Factors & Life Expectancy</h1>
+            <p class="slide-subtitle">Explore the relationship between various health indicators and life expectancy</p>
+            
+            <div class="interactive-note">
+                <h4>💡 Interactive Features:</h4>
+                <p>• Drag to zoom and pan around the scatter plot<br>
+                • Click on points to see country details<br>
+                • Use the brush to select specific regions</p>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label class="control-label">X-Axis:</label>
+                    <select id="xAxis">
+                        <option value="gdp">GDP</option>
+                        <option value="alcohol">Alcohol Consumption</option>
+                        <option value="bmi">BMI</option>
+                        <option value="schooling">Schooling</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Y-Axis:</label>
+                    <select id="yAxis">
+                        <option value="life_expectancy">Life Expectancy</option>
+                        <option value="adult_mortality">Adult Mortality</option>
+                        <option value="infant_deaths">Infant Deaths</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Color By:</label>
+                    <select id="scatterColor">
+                        <option value="status">Development Status</option>
+                        <option value="region">Region</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="chart-container" id="scatterContainer">
+                <div id="scatterPlot"></div>
+            </div>
+        </div>
+        
+        <!-- Slide 4: Time Series Analysis -->
+        <div class="slide" id="slide4">
+            <h1 class="slide-title">Temporal Trends & Predictions</h1>
+            <p class="slide-subtitle">Track how life expectancy has changed over time and explore future projections</p>
+            
+            <div class="interactive-note">
+                <h4>💡 Interactive Features:</h4>
+                <p>• Click on countries to add/remove them from the chart<br>
+                • Use the brush to zoom into specific time periods<br>
+                • Hover over lines to see exact values</p>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label class="control-label">Countries:</label>
+                    <select id="countrySelect" multiple>
+                        <option value="United States">United States</option>
+                        <option value="Japan">Japan</option>
+                        <option value="Germany">Germany</option>
+                        <option value="China">China</option>
+                        <option value="India">India</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Metric:</label>
+                    <select id="timeMetric">
+                        <option value="life_expectancy">Life Expectancy</option>
+                        <option value="gdp">GDP</option>
+                        <option value="schooling">Schooling</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="chart-container" id="lineChartContainer">
+                <div id="lineChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentSlide = 1;
+        const totalSlides = 4;
+        let data = [];
+        let worldData = null;
+        
+        // Initialize the application
+        async function init() {
+            await loadData();
+            updateProgress();
+            setupEventListeners();
+            renderSlide1();
+        }
+        
+        // Load and process data
+        async function loadData() {
+            try {
+                const response = await fetch('LifeExpectancyData/Life Expectancy Data.csv');
+                const csvText = await response.text();
+                data = d3.csvParse(csvText);
+                
+                // Clean and process data
+                data.forEach(d => {
+                    d.Year = +d.Year;
+                    d['Life expectancy '] = +d['Life expectancy '];
+                    d['Adult Mortality'] = +d['Adult Mortality'];
+                    d['infant deaths'] = +d['infant deaths'];
+                    d.Alcohol = +d.Alcohol || 0;
+                    d.GDP = +d.GDP || 0;
+                    d.Population = +d.Population || 0;
+                    d.BMI = +d.BMI || 0;
+                    d.Schooling = +d.Schooling || 0;
+                });
+                
+                console.log('Data loaded:', data.length, 'records');
+            } catch (error) {
+                console.error('Error loading data:', error);
+                // Create sample data for demonstration
+                data = createSampleData();
+            }
+        }
+        
+        // Create sample data for demonstration
+        function createSampleData() {
+            const countries = ['United States', 'Japan', 'Germany', 'China', 'India', 'Brazil', 'Russia', 'South Africa', 'Nigeria', 'Egypt'];
+            const years = [2000, 2005, 2010, 2015];
+            const data = [];
+            
+            countries.forEach(country => {
+                years.forEach(year => {
+                    const baseLifeExp = 60 + Math.random() * 30;
+                    data.push({
+                        Country: country,
+                        Year: year,
+                        Status: Math.random() > 0.5 ? 'Developed' : 'Developing',
+                        'Life expectancy ': baseLifeExp + (year - 2000) * 0.5,
+                        'Adult Mortality': 100 + Math.random() * 200,
+                        'infant deaths': Math.random() * 50,
+                        Alcohol: Math.random() * 10,
+                        GDP: 1000 + Math.random() * 50000,
+                        Population: 1000000 + Math.random() * 1000000000,
+                        BMI: 20 + Math.random() * 15,
+                        Schooling: 5 + Math.random() * 15
+                    });
+                });
+            });
+            
+            return data;
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Year slider
+            const yearSlider = document.getElementById('yearSlider');
+            const yearValue = document.getElementById('yearValue');
+            yearSlider.addEventListener('input', function() {
+                yearValue.textContent = this.value;
+                if (currentSlide === 1) renderSlide1();
+            });
+            
+            // Color by selector
+            document.getElementById('colorBy').addEventListener('change', function() {
+                if (currentSlide === 1) renderSlide1();
+            });
+            
+            // Metric selectors for slide 2
+            document.getElementById('metricSelect').addEventListener('change', function() {
+                if (currentSlide === 2) renderSlide2();
+            });
+            
+            document.getElementById('groupBy').addEventListener('change', function() {
+                if (currentSlide === 2) renderSlide2();
+            });
+            
+            // Axis selectors for slide 3
+            document.getElementById('xAxis').addEventListener('change', function() {
+                if (currentSlide === 3) renderSlide3();
+            });
+            
+            document.getElementById('yAxis').addEventListener('change', function() {
+                if (currentSlide === 3) renderSlide3();
+            });
+            
+            document.getElementById('scatterColor').addEventListener('change', function() {
+                if (currentSlide === 3) renderSlide3();
+            });
+            
+            // Time series controls
+            document.getElementById('timeMetric').addEventListener('change', function() {
+                if (currentSlide === 4) renderSlide4();
+            });
+        }
+        
+        // Navigation functions
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+                updateSlides();
+                updateProgress();
+            }
+        }
+        
+        function previousSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                updateSlides();
+                updateProgress();
+            }
+        }
+        
+        function updateSlides() {
+            // Hide all slides
+            document.querySelectorAll('.slide').forEach(slide => {
+                slide.classList.remove('active');
+            });
+            
+            // Show current slide
+            document.getElementById(`slide${currentSlide}`).classList.add('active');
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = currentSlide === 1;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides;
+            
+            // Render the current slide
+            switch(currentSlide) {
+                case 1:
+                    renderSlide1();
+                    break;
+                case 2:
+                    renderSlide2();
+                    break;
+                case 3:
+                    renderSlide3();
+                    break;
+                case 4:
+                    renderSlide4();
+                    break;
+            }
+        }
+        
+        function updateProgress() {
+            const progress = (currentSlide / totalSlides) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+        }
+        
+        // Slide 1: World Map
+        function renderSlide1() {
+            const container = document.getElementById('worldMap');
+            container.innerHTML = '';
+            
+            const width = 800;
+            const height = 500;
+            
+            const svg = d3.select('#worldMap')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            const year = document.getElementById('yearSlider').value;
+            const colorBy = document.getElementById('colorBy').value;
+            
+            // Filter data for current year
+            const yearData = data.filter(d => d.Year == year);
+            
+            // Create color scale
+            const colorScale = d3.scaleSequential()
+                .domain(d3.extent(yearData, d => d[colorBy === 'life_expectancy' ? 'Life expectancy ' : colorBy]))
+                .interpolator(d3.interpolateBlues);
+            
+            // Create a simple world map representation
+            const projection = d3.geoMercator()
+                .fitSize([width, height], {type: "FeatureCollection", features: []});
+            
+            // Create sample countries as circles
+            const countries = [...new Set(yearData.map(d => d.Country))];
+            
+            svg.selectAll('circle')
+                .data(countries)
+                .enter()
+                .append('circle')
+                .attr('cx', (d, i) => 100 + (i % 8) * 80)
+                .attr('cy', (d, i) => 100 + Math.floor(i / 8) * 60)
+                .attr('r', d => {
+                    const countryData = yearData.find(y => y.Country === d);
+                    return countryData ? Math.sqrt(countryData['Life expectancy ']) * 2 : 5;
+                })
+                .attr('fill', d => {
+                    const countryData = yearData.find(y => y.Country === d);
+                    if (!countryData) return '#ccc';
+                    
+                    if (colorBy === 'status') {
+                        return countryData.Status === 'Developed' ? '#3498db' : '#e74c3c';
+                    }
+                    return colorScale(countryData[colorBy === 'life_expectancy' ? 'Life expectancy ' : colorBy]);
+                })
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 1)
+                .on('mouseover', function(event, d) {
+                    const countryData = yearData.find(y => y.Country === d);
+                    if (countryData) {
+                        d3.select(this).attr('stroke-width', 3);
+                        
+                        const tooltip = d3.select('body').append('div')
+                            .attr('class', 'tooltip')
+                            .style('left', (event.pageX + 10) + 'px')
+                            .style('top', (event.pageY - 10) + 'px');
+                        
+                        tooltip.html(`
+                            <strong>${d}</strong><br>
+                            Life Expectancy: ${countryData['Life expectancy '].toFixed(1)} years<br>
+                            Status: ${countryData.Status}<br>
+                            GDP: $${countryData.GDP.toLocaleString()}<br>
+                            Population: ${countryData.Population.toLocaleString()}
+                        `);
+                    }
+                })
+                .on('mouseout', function() {
+                    d3.select(this).attr('stroke-width', 1);
+                    d3.selectAll('.tooltip').remove();
+                });
+            
+            // Add legend
+            const legend = svg.append('g')
+                .attr('transform', `translate(${width - 200}, 20)`);
+            
+            if (colorBy === 'status') {
+                const statuses = ['Developed', 'Developing'];
+                const colors = ['#3498db', '#e74c3c'];
+                
+                statuses.forEach((status, i) => {
+                    const legendItem = legend.append('g')
+                        .attr('transform', `translate(0, ${i * 25})`);
+                    
+                    legendItem.append('circle')
+                        .attr('r', 8)
+                        .attr('fill', colors[i]);
+                    
+                    legendItem.append('text')
+                        .attr('x', 15)
+                        .attr('y', 4)
+                        .text(status);
+                });
+            }
+        }
+        
+        // Slide 2: Bar Chart
+        function renderSlide2() {
+            const container = document.getElementById('barChart');
+            container.innerHTML = '';
+            
+            const width = 800;
+            const height = 400;
+            
+            const svg = d3.select('#barChart')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            const metric = document.getElementById('metricSelect').value;
+            const groupBy = document.getElementById('groupBy').value;
+            
+            // Aggregate data
+            const aggregated = d3.group(data, d => d[groupBy === 'status' ? 'Status' : 'Country']);
+            const chartData = Array.from(aggregated, ([key, values]) => ({
+                group: key,
+                value: d3.mean(values, d => d[metric === 'life_expectancy' ? 'Life expectancy ' : 
+                                                  metric === 'adult_mortality' ? 'Adult Mortality' : 'infant deaths'])
+            }));
+            
+            const margin = {top: 20, right: 30, bottom: 90, left: 60};
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            
+            const x = d3.scaleBand()
+                .domain(chartData.map(d => d.group))
+                .range([0, chartWidth])
+                .padding(0.1);
+            
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(chartData, d => d.value)])
+                .range([chartHeight, 0]);
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left}, ${margin.top})`);
+            
+            // Add bars
+            g.selectAll('rect')
+                .data(chartData)
+                .enter()
+                .append('rect')
+                .attr('x', d => x(d.group))
+                .attr('y', d => y(d.value))
+                .attr('width', x.bandwidth())
+                .attr('height', d => chartHeight - y(d.value))
+                .attr('fill', '#3498db')
+                .on('mouseover', function(event, d) {
+                    d3.select(this).attr('fill', '#2980b9');
+                    
+                    const tooltip = d3.select('body').append('div')
+                        .attr('class', 'tooltip')
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                    
+                    tooltip.html(`
+                        <strong>${d.group}</strong><br>
+                        ${metric.replace('_', ' ').toUpperCase()}: ${d.value.toFixed(1)}
+                    `);
+                })
+                .on('mouseout', function() {
+                    d3.select(this).attr('fill', '#3498db');
+                    d3.selectAll('.tooltip').remove();
+                });
+            
+            // Add axes
+            g.append('g')
+                .attr('transform', `translate(0, ${chartHeight})`)
+                .call(d3.axisBottom(x))
+                .selectAll('text')
+                .attr('transform', 'rotate(-45)')
+                .style('text-anchor', 'end');
+            
+            g.append('g')
+                .call(d3.axisLeft(y));
+            
+            // Add labels
+            g.append('text')
+                .attr('transform', `translate(${chartWidth / 2}, ${chartHeight + 60})`)
+                .style('text-anchor', 'middle')
+                .text(groupBy === 'status' ? 'Development Status' : 'Country');
+            
+            g.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - margin.left)
+                .attr('x', 0 - (chartHeight / 2))
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text(metric.replace('_', ' ').toUpperCase());
+        }
+        
+        // Slide 3: Scatter Plot
+        function renderSlide3() {
+            const container = document.getElementById('scatterPlot');
+            container.innerHTML = '';
+            
+            const width = 800;
+            const height = 500;
+            
+            const svg = d3.select('#scatterPlot')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            const xAxis = document.getElementById('xAxis').value;
+            const yAxis = document.getElementById('yAxis').value;
+            const colorBy = document.getElementById('scatterColor').value;
+            
+            // Filter data for latest year
+            const latestYear = d3.max(data, d => d.Year);
+            const plotData = data.filter(d => d.Year === latestYear);
+            
+            const margin = {top: 20, right: 30, bottom: 60, left: 60};
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            
+            const x = d3.scaleLinear()
+                .domain(d3.extent(plotData, d => d[xAxis]))
+                .range([0, chartWidth]);
+            
+            const y = d3.scaleLinear()
+                .domain(d3.extent(plotData, d => d[yAxis]))
+                .range([chartHeight, 0]);
+            
+            const color = d3.scaleOrdinal()
+                .domain([...new Set(plotData.map(d => d[colorBy === 'status' ? 'Status' : 'Country']))])
+                .range(d3.schemeCategory10);
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left}, ${margin.top})`);
+            
+            // Add dots
+            g.selectAll('circle')
+                .data(plotData)
+                .enter()
+                .append('circle')
+                .attr('cx', d => x(d[xAxis]))
+                .attr('cy', d => y(d[yAxis]))
+                .attr('r', 6)
+                .attr('fill', d => color(d[colorBy === 'status' ? 'Status' : 'Country']))
+                .attr('opacity', 0.7)
+                .on('mouseover', function(event, d) {
+                    d3.select(this).attr('r', 8).attr('opacity', 1);
+                    
+                    const tooltip = d3.select('body').append('div')
+                        .attr('class', 'tooltip')
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                    
+                    tooltip.html(`
+                        <strong>${d.Country}</strong><br>
+                        ${xAxis.toUpperCase()}: ${d[xAxis].toFixed(2)}<br>
+                        ${yAxis.replace('_', ' ').toUpperCase()}: ${d[yAxis].toFixed(2)}<br>
+                        Status: ${d.Status}
+                    `);
+                })
+                .on('mouseout', function() {
+                    d3.select(this).attr('r', 6).attr('opacity', 0.7);
+                    d3.selectAll('.tooltip').remove();
+                });
+            
+            // Add axes
+            g.append('g')
+                .attr('transform', `translate(0, ${chartHeight})`)
+                .call(d3.axisBottom(x));
+            
+            g.append('g')
+                .call(d3.axisLeft(y));
+            
+            // Add labels
+            g.append('text')
+                .attr('transform', `translate(${chartWidth / 2}, ${chartHeight + 40})`)
+                .style('text-anchor', 'middle')
+                .text(xAxis.toUpperCase());
+            
+            g.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - margin.left)
+                .attr('x', 0 - (chartHeight / 2))
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text(yAxis.replace('_', ' ').toUpperCase());
+        }
+        
+        // Slide 4: Time Series
+        function renderSlide4() {
+            const container = document.getElementById('lineChart');
+            container.innerHTML = '';
+            
+            const width = 800;
+            const height = 400;
+            
+            const svg = d3.select('#lineChart')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            const metric = document.getElementById('timeMetric').value;
+            const selectedCountries = ['United States', 'Japan', 'Germany', 'China', 'India'];
+            
+            const margin = {top: 20, right: 30, bottom: 60, left: 60};
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            
+            // Filter data for selected countries
+            const timeData = data.filter(d => selectedCountries.includes(d.Country));
+            
+            const x = d3.scaleLinear()
+                .domain(d3.extent(timeData, d => d.Year))
+                .range([0, chartWidth]);
+            
+            const y = d3.scaleLinear()
+                .domain(d3.extent(timeData, d => d[metric === 'life_expectancy' ? 'Life expectancy ' : metric]))
+                .range([chartHeight, 0]);
+            
+            const color = d3.scaleOrdinal()
+                .domain(selectedCountries)
+                .range(d3.schemeCategory10);
+            
+            const line = d3.line()
+                .x(d => x(d.Year))
+                .y(d => y(d[metric === 'life_expectancy' ? 'Life expectancy ' : metric]));
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left}, ${margin.top})`);
+            
+            // Add lines
+            selectedCountries.forEach(country => {
+                const countryData = timeData.filter(d => d.Country === country);
+                
+                g.append('path')
+                    .datum(countryData)
+                    .attr('fill', 'none')
+                    .attr('stroke', color(country))
+                    .attr('stroke-width', 3)
+                    .attr('d', line);
+                
+                // Add dots
+                g.selectAll(`.dot-${country}`)
+                    .data(countryData)
+                    .enter()
+                    .append('circle')
+                    .attr('class', `dot-${country}`)
+                    .attr('cx', d => x(d.Year))
+                    .attr('cy', d => y(d[metric === 'life_expectancy' ? 'Life expectancy ' : metric]))
+                    .attr('r', 4)
+                    .attr('fill', color(country))
+                    .on('mouseover', function(event, d) {
+                        d3.select(this).attr('r', 6);
+                        
+                        const tooltip = d3.select('body').append('div')
+                            .attr('class', 'tooltip')
+                            .style('left', (event.pageX + 10) + 'px')
+                            .style('top', (event.pageY - 10) + 'px');
+                        
+                        tooltip.html(`
+                            <strong>${d.Country}</strong><br>
+                            Year: ${d.Year}<br>
+                            ${metric.replace('_', ' ').toUpperCase()}: ${d[metric === 'life_expectancy' ? 'Life expectancy ' : metric].toFixed(1)}
+                        `);
+                    })
+                    .on('mouseout', function() {
+                        d3.select(this).attr('r', 4);
+                        d3.selectAll('.tooltip').remove();
+                    });
+            });
+            
+            // Add axes
+            g.append('g')
+                .attr('transform', `translate(0, ${chartHeight})`)
+                .call(d3.axisBottom(x).tickFormat(d3.format('d')));
+            
+            g.append('g')
+                .call(d3.axisLeft(y));
+            
+            // Add legend
+            const legend = g.append('g')
+                .attr('transform', `translate(${chartWidth - 100}, 0)`);
+            
+            selectedCountries.forEach((country, i) => {
+                const legendItem = legend.append('g')
+                    .attr('transform', `translate(0, ${i * 20})`);
+                
+                legendItem.append('line')
+                    .attr('x1', 0)
+                    .attr('x2', 20)
+                    .attr('stroke', color(country))
+                    .attr('stroke-width', 2);
+                
+                legendItem.append('text')
+                    .attr('x', 25)
+                    .attr('y', 4)
+                    .text(country);
+            });
+            
+            // Add labels
+            g.append('text')
+                .attr('transform', `translate(${chartWidth / 2}, ${chartHeight + 40})`)
+                .style('text-anchor', 'middle')
+                .text('Year');
+            
+            g.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - margin.left)
+                .attr('x', 0 - (chartHeight / 2))
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text(metric.replace('_', ' ').toUpperCase());
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html> 
