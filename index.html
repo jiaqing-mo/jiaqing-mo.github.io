@@ -496,7 +496,8 @@
             svg.append('g')
                 .attr('transform', `translate(0,${height - margin.bottom})`)
                 .call(d3.axisBottom(x).ticks(6)
-                .tickFormat(d3.format('$,')));//.tickFormat(d => '$' + d3.format('.0s')(d)));
+                //.tickFormat(d3.format('$,')));
+                .tickFormat(d => '$' + d3.format('.0s')(d)));
             
             svg.append('g')
                 .attr('transform', `translate(${margin.left},0)`)
@@ -750,7 +751,8 @@
             svg.append('g')
                 .attr('transform', `translate(${margin.left},0)`)
                 .call(d3.axisLeft(y).ticks(6)
-                .tickFormat(d3.format('$,')));
+                //.tickFormat(d3.format('$,'))); 
+                .tickFormat(d => '$' + d3.format('.0s')(d)));
             
             // Add axis labels
             svg.append('text')
