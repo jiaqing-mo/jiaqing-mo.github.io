@@ -518,7 +518,8 @@
                 .attr('y', 15)
                 .style('text-anchor', 'middle')
                 .text('Life Expectancy (years)');
-            
+                
+            const tooltip = d3.select("#tooltip");
             // Add dots with animation
             const dots = svg.selectAll('circle')
                 .data(countryData)
