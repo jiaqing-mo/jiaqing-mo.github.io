@@ -117,9 +117,15 @@
             flex: 1;
         }
         
-        .detail-chart {
+        .detail-charts {
             flex: 1;
-            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .detail-chart {
+            min-height: 300px;
         }
         
         .chart-container {
@@ -216,7 +222,10 @@
             <div id="loading" class="loading">Loading data...</div>
             <div class="chart-layout">
                 <div id="chart" class="main-chart chart-container scene-transition"></div>
-                <div id="detail-chart" class="detail-chart chart-container scene-transition"></div>
+                <div class="detail-charts">
+                    <div id="life-expectancy-chart" class="detail-chart chart-container scene-transition"></div>
+                    <div id="schooling-chart" class="detail-chart chart-container scene-transition"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -269,12 +278,15 @@
         
         function clearScene() {
             const chartContainer = document.getElementById('chart');
-            const detailContainer = document.getElementById('detail-chart');
+            const lifeExpectancyChart = document.getElementById('life-expectancy-chart');
+            const schoolingChart = document.getElementById('schooling-chart');
             
             chartContainer.innerHTML = '';
-            detailContainer.innerHTML = '';
+            lifeExpectancyChart.innerHTML = '';
+            schoolingChart.innerHTML = '';
             chartContainer.classList.remove('active');
-            detailContainer.classList.remove('active');
+            lifeExpectancyChart.classList.remove('active');
+            schoolingChart.classList.remove('active');
             
             // Remove all annotations
             d3.selectAll('.annotation').remove();
@@ -282,7 +294,8 @@
             // Re-add transition class
             setTimeout(() => {
                 chartContainer.classList.add('active');
-                detailContainer.classList.add('active');
+                lifeExpectancyChart.classList.add('active');
+                schoolingChart.classList.add('active');
             }, 50);
         }
         
@@ -414,12 +427,89 @@
             });
         }
         
-        function createDetailChart(country) {
+        function createLifeExpectancyChart(country) {
             const width = 400;
             const height = 300;
             const margin = {top: 20, right: 30, bottom: 60, left: 60};
             
-            const svg = d3.select('#detail-chart')
+            const svg = d3.select('#life-expectancy-chart')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // Get data for the selected country
+            const countryData = narrativeState.data.filter(d => d.country === country);
+            
+            if (countryData.length === 0) return;
+            
+            const x = d3.scaleLinear()
+                .domain(d3.extent(countryData, d => d.year))
+                .range([margin.left, width - margin.right]);
+            
+            const y = d3.scaleLinear()
+                .domain([d3.min(countryData, d => d.lifeExpectancy) - 2, d3.max(countryData, d => d.lifeExpectancy) + 2])
+                .range([height - margin.bottom, margin.top]);
+            
+            // Add axes
+            svg.append('g')
+                .attr('transform', `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(x).tickFormat(d3.format('d')));
+            
+            svg.append('g')
+                .attr('transform', `translate(${margin.left},0)`)
+                .call(d3.axisLeft(y));
+            
+            // Add axis labels
+            svg.append('text')
+                .attr('x', width / 2)
+                .attr('y', height - 10)
+                .style('text-anchor', 'middle')
+                .text('Year');
+            
+            svg.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', 15)
+                .style('text-anchor', 'middle')
+                .text('Life Expectancy (years)');
+            
+            // Add line
+            const line = d3.line()
+                .x(d => x(d.year))
+                .y(d => y(d.lifeExpectancy));
+            
+            svg.append('path')
+                .datum(countryData)
+                .attr('fill', 'none')
+                .attr('stroke', '#3498db')
+                .attr('stroke-width', 3)
+                .attr('d', line);
+            
+            // Add dots
+            svg.selectAll('circle')
+                .data(countryData)
+                .enter()
+                .append('circle')
+                .attr('cx', d => x(d.year))
+                .attr('cy', d => y(d.lifeExpectancy))
+                .attr('r', 4)
+                .attr('fill', '#3498db');
+            
+            // Add title
+            svg.append('text')
+                .attr('x', width / 2)
+                .attr('y', 15)
+                .style('text-anchor', 'middle')
+                .style('font-weight', 'bold')
+                .text(`${country} - Life Expectancy Trend`);
+        }
+        
+        function createSchoolingChart(country) {
+            const width = 400;
+            const height = 300;
+            const margin = {top: 20, right: 30, bottom: 60, left: 60};
+            
+            const svg = d3.select('#schooling-chart')
                 .append('svg')
                 .attr('width', width)
                 .attr('height', height);
@@ -504,9 +594,11 @@
                 .attr('opacity', d => d && d.country === country ? 1 : 0.3)
                 .attr('stroke-width', d => d && d.country === country ? 3 : 1);
             
-            // Clear and create detail chart
-            d3.select('#detail-chart').html('');
-            createDetailChart(country);
+            // Clear and create both detail charts
+            d3.select('#life-expectancy-chart').html('');
+            d3.select('#schooling-chart').html('');
+            createLifeExpectancyChart(country);
+            createSchoolingChart(country);
         }
         
         // ===== INITIALIZATION =====
