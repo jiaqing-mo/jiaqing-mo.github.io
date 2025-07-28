@@ -350,7 +350,7 @@
         const annotations = [
             {
                 id: 'developed-countries',
-                text: 'Developed countries show consistently higher life expectancy',
+                text: 'Developed countries show higher life expectancy',
                 position: { x: 650, y: 80 },
                 arrow: 'left',
                 highlight: true
@@ -358,7 +358,7 @@
             {
                 id: 'developing-gap',
                 text: 'Developing countries face significant challenges',
-                position: { x: 650, y: 150 },
+                position: { x: 650, y: 170 },
                 arrow: 'left',
                 highlight: true
             }
@@ -506,7 +506,13 @@
                 .style('cursor', 'pointer')
                 .on('click', function(event, d) {
                     if (d && d.country) {
-                        highlightCountry(d.country);
+                        if (narrativeState.selectedCountry === d.country) {
+                            // Un-select if clicking the same country
+                            unselectCountry();
+                        } else {
+                            // Select the new country
+                            highlightCountry(d.country);
+                        }
                     }
                 });
             
@@ -816,6 +822,26 @@
             document.getElementById('country-life-expectancy').textContent = `${latestCountryData.lifeExpectancy.toFixed(1)} years`;
             document.getElementById('country-gdp').textContent = `$${d3.format('.0s')(latestCountryData.gdp)}`;
             document.getElementById('country-schooling').textContent = `${latestCountryData.schooling.toFixed(1)} years`;
+        }
+        
+        function unselectCountry() {
+            // Reset selection state
+            narrativeState.selectedCountry = null;
+            
+            // Reset all dots to normal appearance
+            d3.selectAll('circle')
+                .transition()
+                .duration(300)
+                .attr('opacity', 1)
+                .attr('stroke-width', 1);
+            
+            // Hide the detail charts container
+            const detailCharts = document.querySelector('.detail-charts');
+            detailCharts.style.display = 'none';
+            
+            // Reset trend selector to default
+            const selector = document.getElementById('trend-selector');
+            selector.value = '';
         }
         
         function updateDetailChart() {
