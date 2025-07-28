@@ -113,8 +113,26 @@
             align-items: flex-start;
         }
         
-        .main-chart {
+        .main-chart-container {
             flex: 1.2;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .main-chart {
+            flex: 1;
+        }
+        
+        .instruction-text {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+            font-style: italic;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
         }
         
         .detail-charts {
@@ -291,9 +309,12 @@
         
         <div class="visualization">
             <div id="loading" class="loading">Loading data...</div>
-            <div class="chart-layout">
-                <div id="chart" class="main-chart chart-container scene-transition"></div>
-                <div class="detail-charts" style="display: none;">
+                            <div class="chart-layout">
+                    <div class="main-chart-container">
+                        <div id="chart" class="main-chart chart-container scene-transition"></div>
+                        <div class="instruction-text">Click on any data point to explore country details and trends</div>
+                    </div>
+                    <div class="detail-charts" style="display: none;">
                     <div class="country-stats">
                         <h3 id="country-name">Country Statistics</h3>
                         <div class="stats-grid">
@@ -464,7 +485,7 @@
             })).filter(d => d.country && d.lifeExpectancy > 0); // Filter out invalid data
             
             const x = d3.scaleLinear()
-                .domain([0, 80000])
+                .domain([0, 70000])
                 .range([margin.left, width - margin.right]);
             
             const y = d3.scaleLinear()
