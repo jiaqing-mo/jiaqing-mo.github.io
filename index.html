@@ -248,7 +248,7 @@
             <div id="loading" class="loading">Loading data...</div>
             <div class="chart-layout">
                 <div id="chart" class="main-chart chart-container scene-transition"></div>
-                <div class="detail-charts">
+                <div class="detail-charts" style="display: none;">
                     <div class="chart-selector">
                         <label for="trend-selector">Select Trend:</label>
                         <select id="trend-selector" onchange="updateDetailChart()">
@@ -282,15 +282,15 @@
             {
                 id: 'developed-countries',
                 text: 'Developed countries show consistently higher life expectancy',
-                position: { x: 60, y: 450 },
-                arrow: 'right',
+                position: { x: 650, y: 450 },
+                arrow: 'left',
                 highlight: true
             },
             {
                 id: 'developing-gap',
                 text: 'Developing countries face significant challenges',
-                position: { x: 60, y: 480 },
-                arrow: 'right',
+                position: { x: 650, y: 480 },
+                arrow: 'left',
                 highlight: true
             }
         ];
@@ -313,6 +313,7 @@
             const chartContainer = document.getElementById('chart');
             const lifeExpectancyChart = document.getElementById('life-expectancy-chart');
             const schoolingChart = document.getElementById('schooling-chart');
+            const detailCharts = document.querySelector('.detail-charts');
             
             chartContainer.innerHTML = '';
             lifeExpectancyChart.innerHTML = '';
@@ -320,6 +321,9 @@
             chartContainer.classList.remove('active');
             lifeExpectancyChart.classList.remove('active');
             schoolingChart.classList.remove('active');
+            
+            // Hide the detail charts container
+            detailCharts.style.display = 'none';
             
             // Remove all annotations
             d3.selectAll('.annotation').remove();
@@ -441,7 +445,7 @@
             
             // Add legend
             const legend = svg.append('g')
-                .attr('transform', `translate(60, ${height - 80})`);
+                .attr('transform', `translate(${width - 150}, ${height - 80})`);
             
             const statuses = [...new Set(countryData.map(d => d.status))];
             
@@ -626,6 +630,10 @@
                 .duration(300)
                 .attr('opacity', d => d && d.country === country ? 1 : 0.3)
                 .attr('stroke-width', d => d && d.country === country ? 3 : 1);
+            
+            // Show the detail charts container
+            const detailCharts = document.querySelector('.detail-charts');
+            detailCharts.style.display = 'flex';
             
             // Clear and create both detail charts
             d3.select('#life-expectancy-chart').html('');
