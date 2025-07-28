@@ -434,7 +434,7 @@
                 .range([margin.left, width - margin.right]);
             
             const y = d3.scaleLinear()
-                .domain([d3.min(countryData, d => d.lifeExpectancy) - 2, d3.max(countryData, d => d.lifeExpectancy) + 2])
+                .domain([d3.min(countryData, d => d.schooling) - 1, d3.max(countryData, d => d.schooling) + 1])
                 .range([height - margin.bottom, margin.top]);
             
             // Add axes
@@ -458,17 +458,17 @@
                 .attr('x', -height / 2)
                 .attr('y', 15)
                 .style('text-anchor', 'middle')
-                .text('Life Expectancy (years)');
+                .text('Years of Schooling');
             
             // Add line
             const line = d3.line()
                 .x(d => x(d.year))
-                .y(d => y(d.lifeExpectancy));
+                .y(d => y(d.schooling));
             
             svg.append('path')
                 .datum(countryData)
                 .attr('fill', 'none')
-                .attr('stroke', '#3498db')
+                .attr('stroke', '#e74c3c')
                 .attr('stroke-width', 3)
                 .attr('d', line);
             
@@ -478,9 +478,9 @@
                 .enter()
                 .append('circle')
                 .attr('cx', d => x(d.year))
-                .attr('cy', d => y(d.lifeExpectancy))
+                .attr('cy', d => y(d.schooling))
                 .attr('r', 4)
-                .attr('fill', '#3498db');
+                .attr('fill', '#e74c3c');
             
             // Add title
             svg.append('text')
@@ -488,7 +488,7 @@
                 .attr('y', 15)
                 .style('text-anchor', 'middle')
                 .style('font-weight', 'bold')
-                .text(`${country} - Life Expectancy Trend`);
+                .text(`${country} - Schooling Trend`);
         }
         
         // ===== HELPER FUNCTIONS =====
