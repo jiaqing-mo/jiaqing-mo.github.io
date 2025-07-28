@@ -314,6 +314,8 @@
                         <div id="chart" class="main-chart chart-container scene-transition"></div>
                         <div class="instruction-text">Click on any data point to explore country details and trends<br>Click again to return to the main chart</div>
                     </div>
+                    <div id="tooltip" style="position:absolute; visibility:hidden; background:white; border:1px solid #ccc; padding:4px 8px; font-size:12px; pointer-events:none; border-radius:4px;"></div>
+
                     <div class="detail-charts" style="display: none;">
                     <div class="country-stats">
                         <h3 id="country-name">Country Statistics</h3>
@@ -527,6 +529,19 @@
                 .attr('r', 0)
                 .attr('fill', d => narrativeState.colorScales.development(d.status))
                 .style('cursor', 'pointer')
+                .on("mouseover", function (event, d) {
+                    tooltip.style("visibility", "visible")
+               .text(d.country); // assumes d.country holds the name
+                    d3.select(this).attr("stroke", "black").attr("stroke-width", 1.5);
+                    })
+                .on("mousemove", function (event) {
+                    tooltip.style("top", (event.pageY - 10) + "px")
+               .style("left", (event.pageX + 10) + "px");
+                    })
+                .on("mouseout", function () {
+                    tooltip.style("visibility", "hidden");
+                    d3.select(this).attr("stroke", "none");
+                    })
                 .on('click', function(event, d) {
                     if (d && d.country) {
                         if (narrativeState.selectedCountry === d.country) {
