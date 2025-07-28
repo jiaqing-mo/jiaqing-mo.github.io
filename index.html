@@ -486,7 +486,7 @@
             
             const x = d3.scaleLinear()
                 .domain([0, 70000])
-                .range([margin.left, width - margin.right]);
+                .range([margin.left, width - margin.right]); //60 - 770
             
             const y = d3.scaleLinear()
                 .domain([50, d3.max(countryData, d => d.lifeExpectancy)])
@@ -495,7 +495,8 @@
             // Add axes
             svg.append('g')
                 .attr('transform', `translate(0,${height - margin.bottom})`)
-                .call(d3.axisBottom(x).tickFormat(d => '$' + d3.format('.0s')(d)));
+                .call(d3.axisBottom(x).ticks(6)
+                .tickFormat(d3.format('$,')));//.tickFormat(d => '$' + d3.format('.0s')(d)));
             
             svg.append('g')
                 .attr('transform', `translate(${margin.left},0)`)
@@ -748,7 +749,8 @@
             
             svg.append('g')
                 .attr('transform', `translate(${margin.left},0)`)
-                .call(d3.axisLeft(y).tickFormat(d => '$' + d3.format('.0s')(d)));
+                .call(d3.axisLeft(y).ticks(6)
+                .tickFormat(d3.format('$,')));
             
             // Add axis labels
             svg.append('text')
