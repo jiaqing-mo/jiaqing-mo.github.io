@@ -427,11 +427,11 @@
             
             // Add legend
             const legend = svg.append('g')
-                .attr('transform', `translate(${width - 150}, 20)`);
+                .attr('transform', `translate(${width - 200}, 20)`);
             
             const legendScale = d3.scaleLinear()
                 .domain([40, 85])
-                .range([0, 100]);
+                .range([0, 150]);
             
             const legendAxis = d3.axisBottom(legendScale)
                 .tickValues([40, 50, 60, 70, 80, 85])
@@ -459,7 +459,7 @@
                 .attr('stop-color', narrativeState.colorScales.lifeExpectancy(85));
             
             legend.append('rect')
-                .attr('width', 100)
+                .attr('width', 150)
                 .attr('height', 20)
                 .style('fill', 'url(#legendGradient)');
             
@@ -486,14 +486,14 @@
                 lifeExpectancy: d3.max(values, d => d.lifeExpectancy),
                 status: values[0].status,
                 gdp: d3.max(values, d => d.gdp)
-            }));
+            })).filter(d => d.country && d.lifeExpectancy > 0); // Filter out invalid data
             
             const x = d3.scaleLinear()
                 .domain([0, d3.max(countryData, d => d.gdp)])
                 .range([margin.left, width - margin.right]);
             
             const y = d3.scaleLinear()
-                .domain([0, d3.max(countryData, d => d.lifeExpectancy)])
+                .domain([50, d3.max(countryData, d => d.lifeExpectancy)])
                 .range([height - margin.bottom, margin.top]);
             
             // Add axes
@@ -530,7 +530,9 @@
                 .attr('fill', d => narrativeState.colorScales.development(d.status))
                 .style('cursor', 'pointer')
                 .on('click', function(event, d) {
-                    highlightCountry(d.country);
+                    if (d && d.country) {
+                        highlightCountry(d.country);
+                    }
                 });
             
             // Animate dots appearing
@@ -585,7 +587,7 @@
                 .range([margin.left, width - margin.right]);
             
             const y = d3.scaleLinear()
-                .domain([0, d3.max(countryData, d => d.lifeExpectancy)])
+                .domain([50, d3.max(countryData, d => d.lifeExpectancy)])
                 .range([height - margin.bottom, margin.top]);
             
             // Add axes
@@ -636,17 +638,21 @@
         
         // ===== HELPER FUNCTIONS =====
         function highlightCountry(country) {
+            if (!country) return; // Guard against undefined country
+            
             narrativeState.selectedCountry = country;
             
             // Highlight the selected country
             d3.selectAll('circle')
                 .transition()
                 .duration(300)
-                .attr('opacity', d => d.country === country ? 1 : 0.3)
-                .attr('stroke-width', d => d.country === country ? 3 : 1);
+                .attr('opacity', d => d && d.country === country ? 1 : 0.3)
+                .attr('stroke-width', d => d && d.country === country ? 3 : 1);
             
             // Show country info
             const countryData = narrativeState.data.filter(d => d.country === country);
+            if (countryData.length === 0) return;
+            
             const latest = countryData[countryData.length - 1];
             
             // Create or update info box
