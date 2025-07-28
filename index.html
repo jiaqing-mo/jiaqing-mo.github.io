@@ -314,7 +314,7 @@
                         <div id="chart" class="main-chart chart-container scene-transition"></div>
                         <div class="instruction-text">Click on any data point to explore country details and trends<br>Click again to return to the main chart</div>
                     </div>
-                    <div id="tooltip" style="position:absolute; visibility:hidden; background:white; border:1px solid #ccc; padding:4px 8px; font-size:12px; pointer-events:none; border-radius:4px;"></div>
+                    <div id="tooltip" style="position:relative; visibility:hidden; background:white; border:1px solid #ccc; padding:4px 8px; font-size:12px; pointer-events:none; border-radius:4px;"></div>
 
                     <div class="detail-charts" style="display: none;">
                     <div class="country-stats">
@@ -518,7 +518,7 @@
                 .attr('y', 15)
                 .style('text-anchor', 'middle')
                 .text('Life Expectancy (years)');
-                
+
             const tooltip = d3.select("#tooltip");
             // Add dots with animation
             const dots = svg.selectAll('circle')
