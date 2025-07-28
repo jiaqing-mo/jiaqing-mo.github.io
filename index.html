@@ -44,23 +44,24 @@
             opacity: 0.9;
         }
         
-        .story-controls {
+        .narrative-controls {
             padding: 20px;
             background: #f8f9fa;
             border-bottom: 1px solid #e9ecef;
-        }
-        
-        .story-nav {
             display: flex;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        .story-btn {
-            padding: 12px 24px;
+        .scene-nav {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
             border: none;
-            border-radius: 25px;
+            border-radius: 20px;
             background: #3498db;
             color: white;
             cursor: pointer;
@@ -69,13 +70,35 @@
             font-weight: 500;
         }
         
-        .story-btn:hover {
+        .nav-btn:hover {
             background: #2980b9;
             transform: translateY(-2px);
         }
         
-        .story-btn.active {
+        .nav-btn.active {
             background: #e74c3c;
+        }
+        
+        .nav-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .scene-info {
+            text-align: center;
+            flex-grow: 1;
+        }
+        
+        .scene-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .scene-description {
+            font-size: 14px;
+            color: #666;
         }
         
         .visualization {
@@ -88,61 +111,59 @@
             width: 100%;
             height: 500px;
             margin: 20px 0;
+            position: relative;
         }
         
-        .tooltip {
+        .annotation {
             position: absolute;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #3498db;
+            border-radius: 8px;
             padding: 10px;
-            border-radius: 5px;
             font-size: 12px;
-            pointer-events: none;
+            max-width: 200px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             z-index: 1000;
         }
         
-        .legend {
-            display: flex;
-            justify-content: center;
-            margin: 20px 0;
-            flex-wrap: wrap;
-            gap: 20px;
+        .annotation.highlight {
+            border-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
         }
         
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-        
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 3px;
-        }
-        
-        .story-text {
-            margin: 20px 0;
-            line-height: 1.6;
-            font-size: 16px;
-        }
-        
-        .back-btn {
+        .annotation-arrow {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            padding: 10px 20px;
-            background: #95a5a6;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            display: none;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
         }
         
-        .back-btn:hover {
-            background: #7f8c8d;
+        .annotation-arrow.up {
+            border-bottom-color: #3498db;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .annotation-arrow.down {
+            border-top-color: #3498db;
+            bottom: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .annotation-arrow.left {
+            border-right-color: #3498db;
+            left: -16px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .annotation-arrow.right {
+            border-left-color: #3498db;
+            right: -16px;
+            top: 50%;
+            transform: translateY(-50%);
         }
         
         .loading {
@@ -152,10 +173,13 @@
             color: #666;
         }
         
-        .country-highlight {
-            stroke: #e74c3c;
-            stroke-width: 3;
-            stroke-opacity: 0.8;
+        .scene-transition {
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        
+        .scene-transition.active {
+            opacity: 1;
         }
     </style>
 </head>
@@ -166,170 +190,204 @@
             <p>Exploring health outcomes across countries and time</p>
         </div>
         
-        <div class="story-controls">
-            <div class="story-nav">
-                <button class="story-btn active" data-story="overview">Global Overview</button>
-                <button class="story-btn" data-story="development">Development Status</button>
-                <button class="story-btn" data-story="trends">Temporal Trends</button>
-                <button class="story-btn" data-story="factors">Health Factors</button>
-                <button class="story-btn" data-story="inequality">Health Inequality</button>
+        <div class="narrative-controls">
+            <div class="scene-nav">
+                <button class="nav-btn" id="prev-btn" onclick="previousScene()" disabled>← Previous</button>
+                <button class="nav-btn" id="next-btn" onclick="nextScene()">Next →</button>
+            </div>
+            <div class="scene-info">
+                <div class="scene-title" id="scene-title">Scene 1: Global Overview</div>
+                <div class="scene-description" id="scene-description">Understanding life expectancy patterns worldwide</div>
             </div>
         </div>
         
-        <button class="back-btn" onclick="goBack()">← Back to Overview</button>
-        
         <div class="visualization">
             <div id="loading" class="loading">Loading data...</div>
-            <div id="chart" class="chart-container"></div>
-            <div id="story-text" class="story-text"></div>
+            <div id="chart" class="chart-container scene-transition"></div>
         </div>
     </div>
 
     <script>
-        // Global variables
-        let data = [];
-        let currentStory = 'overview';
-        let currentView = 'overview';
-        let selectedCountry = null;
-        
-        // Color scales
-        const colorScales = {
-            lifeExpectancy: d3.scaleSequential(d3.interpolateRdYlBu).domain([40, 85]),
-            development: d3.scaleOrdinal(d3.schemeCategory10),
-            year: d3.scaleSequential(d3.interpolateViridis).domain([2000, 2015]),
-            gdp: d3.scaleSequential(d3.interpolateBlues).domain([0, 50000])
-        };
-        
-        // Story configurations
-        const stories = {
-            overview: {
-                title: "Global Life Expectancy Overview",
-                description: "Explore life expectancy across the world. Click on countries to see detailed information.",
-                chartType: "world-map"
-            },
-            development: {
-                title: "Development Status Impact",
-                description: "How does development status affect life expectancy? Developed countries generally show higher life expectancy.",
-                chartType: "scatter-plot"
-            },
-            trends: {
-                title: "Temporal Trends",
-                description: "Life expectancy has been increasing globally over time, but at different rates across regions.",
-                chartType: "line-chart"
-            },
-            factors: {
-                title: "Health Factors Analysis",
-                description: "Explore the relationship between life expectancy and various health factors like GDP, healthcare expenditure, and disease rates.",
-                chartType: "multi-scatter"
-            },
-            inequality: {
-                title: "Health Inequality",
-                description: "The gap between countries with highest and lowest life expectancy reveals global health disparities.",
-                chartType: "bar-chart"
+        // ===== NARRATIVE VISUALIZATION PARAMETERS =====
+        const narrativeState = {
+            currentScene: 0,
+            totalScenes: 3,
+            selectedCountry: null,
+            highlightedElement: null,
+            animationSpeed: 1000,
+            data: [],
+            colorScales: {
+                lifeExpectancy: d3.scaleSequential(d3.interpolateRdYlBu).domain([40, 85]),
+                development: d3.scaleOrdinal(d3.schemeCategory10),
+                year: d3.scaleSequential(d3.interpolateViridis).domain([2000, 2015])
             }
         };
         
-        // Load and process data
-        async function loadData() {
-            try {
-                const csvData = await d3.csv('LifeExpectancyData/Life Expectancy Data.csv');
-                
-                // Clean and process data
-                data = csvData.map(d => ({
-                    country: d.Country,
-                    year: +d.Year,
-                    status: d.Status,
-                    lifeExpectancy: +d['Life expectancy '] || 0,
-                    adultMortality: +d['Adult Mortality'] || 0,
-                    infantDeaths: +d['infant deaths'] || 0,
-                    alcohol: +d.Alcohol || 0,
-                    percentageExpenditure: +d['percentage expenditure'] || 0,
-                    hepatitisB: +d['Hepatitis B'] || 0,
-                    measles: +d['Measles '] || 0,
-                    bmi: +d[' BMI '] || 0,
-                    underFiveDeaths: +d['under-five deaths '] || 0,
-                    polio: +d.Polio || 0,
-                    totalExpenditure: +d['Total expenditure'] || 0,
-                    diphtheria: +d['Diphtheria '] || 0,
-                    hivAids: +d[' HIV/AIDS'] || 0,
-                    gdp: +d.GDP || 0,
-                    population: +d.Population || 0,
-                    thinness1_19: +d[' thinness  1-19 years'] || 0,
-                    thinness5_9: +d[' thinness 5-9 years'] || 0,
-                    incomeComposition: +d['Income composition of resources'] || 0,
-                    schooling: +d.Schooling || 0
-                })).filter(d => d.lifeExpectancy > 0);
-                
-                document.getElementById('loading').style.display = 'none';
-                initializeStory();
-                
-            } catch (error) {
-                console.error('Error loading data:', error);
-                document.getElementById('loading').innerHTML = 'Error loading data. Please check the file path.';
+        // ===== SCENE TEMPLATES =====
+        const scenes = [
+            {
+                id: 'scene1',
+                title: 'Global Overview',
+                description: 'Understanding life expectancy patterns worldwide',
+                setup: setupScene1,
+                annotations: [
+                    {
+                        id: 'global-trend',
+                        text: 'Global average life expectancy has been steadily increasing',
+                        position: { x: 400, y: 100 },
+                        arrow: 'down',
+                        highlight: false
+                    },
+                    {
+                        id: 'regional-variation',
+                        text: 'Significant regional variations exist in life expectancy',
+                        position: { x: 200, y: 300 },
+                        arrow: 'right',
+                        highlight: true
+                    }
+                ]
+            },
+            {
+                id: 'scene2',
+                title: 'Development Divide',
+                description: 'How development status affects life expectancy',
+                setup: setupScene2,
+                annotations: [
+                    {
+                        id: 'developed-countries',
+                        text: 'Developed countries show consistently higher life expectancy',
+                        position: { x: 600, y: 150 },
+                        arrow: 'left',
+                        highlight: true
+                    },
+                    {
+                        id: 'developing-gap',
+                        text: 'Developing countries face significant challenges',
+                        position: { x: 200, y: 350 },
+                        arrow: 'right',
+                        highlight: true
+                    }
+                ]
+            },
+            {
+                id: 'scene3',
+                title: 'Health Factors',
+                description: 'Exploring the relationship between health factors and life expectancy',
+                setup: setupScene3,
+                annotations: [
+                    {
+                        id: 'education-impact',
+                        text: 'Education shows strong correlation with life expectancy',
+                        position: { x: 500, y: 200 },
+                        arrow: 'down',
+                        highlight: true
+                    },
+                    {
+                        id: 'gdp-relationship',
+                        text: 'GDP per capita also correlates with health outcomes',
+                        position: { x: 300, y: 300 },
+                        arrow: 'up',
+                        highlight: false
+                    }
+                ]
+            }
+        ];
+        
+        // ===== TRIGGERS =====
+        function nextScene() {
+            if (narrativeState.currentScene < narrativeState.totalScenes - 1) {
+                narrativeState.currentScene++;
+                updateScene();
+                updateNavigation();
             }
         }
         
-        // Initialize the story
-        function initializeStory() {
-            setupEventListeners();
-            showStory('overview');
+        function previousScene() {
+            if (narrativeState.currentScene > 0) {
+                narrativeState.currentScene--;
+                updateScene();
+                updateNavigation();
+            }
         }
         
-        // Setup event listeners
-        function setupEventListeners() {
-            document.querySelectorAll('.story-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const story = this.getAttribute('data-story');
-                    showStory(story);
-                    
-                    // Update active button
-                    document.querySelectorAll('.story-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                });
+        function updateNavigation() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            prevBtn.disabled = narrativeState.currentScene === 0;
+            nextBtn.disabled = narrativeState.currentScene === narrativeState.totalScenes - 1;
+        }
+        
+        function updateScene() {
+            const scene = scenes[narrativeState.currentScene];
+            document.getElementById('scene-title').textContent = `Scene ${narrativeState.currentScene + 1}: ${scene.title}`;
+            document.getElementById('scene-description').textContent = scene.description;
+            
+            // Clear previous scene
+            clearScene();
+            
+            // Setup new scene
+            scene.setup();
+            
+            // Add annotations with delay
+            setTimeout(() => {
+                addAnnotations(scene.annotations);
+            }, narrativeState.animationSpeed);
+        }
+        
+        function clearScene() {
+            const chartContainer = document.getElementById('chart');
+            chartContainer.innerHTML = '';
+            chartContainer.classList.remove('active');
+            
+            // Remove all annotations
+            d3.selectAll('.annotation').remove();
+            
+            // Re-add transition class
+            setTimeout(() => {
+                chartContainer.classList.add('active');
+            }, 50);
+        }
+        
+        function addAnnotations(annotations) {
+            annotations.forEach((annotation, index) => {
+                setTimeout(() => {
+                    createAnnotation(annotation);
+                }, index * 500);
             });
         }
         
-        // Show story
-        function showStory(story) {
-            currentStory = story;
-            currentView = story;
-            
-            const storyConfig = stories[story];
-            document.getElementById('story-text').innerHTML = `
-                <h2>${storyConfig.title}</h2>
-                <p>${storyConfig.description}</p>
+        function createAnnotation(annotation) {
+            const chartContainer = document.getElementById('chart');
+            const annotationDiv = document.createElement('div');
+            annotationDiv.className = `annotation ${annotation.highlight ? 'highlight' : ''}`;
+            annotationDiv.id = annotation.id;
+            annotationDiv.innerHTML = `
+                <div class="annotation-arrow ${annotation.arrow}"></div>
+                ${annotation.text}
             `;
             
-            clearChart();
+            annotationDiv.style.left = annotation.position.x + 'px';
+            annotationDiv.style.top = annotation.position.y + 'px';
             
-            switch(storyConfig.chartType) {
-                case 'world-map':
-                    createWorldMap();
-                    break;
-                case 'scatter-plot':
-                    createScatterPlot();
-                    break;
-                case 'line-chart':
-                    createLineChart();
-                    break;
-                case 'multi-scatter':
-                    createMultiScatter();
-                    break;
-                case 'bar-chart':
-                    createBarChart();
-                    break;
-            }
+            chartContainer.appendChild(annotationDiv);
+            
+            // Add entrance animation
+            annotationDiv.style.opacity = '0';
+            annotationDiv.style.transform = 'scale(0.8)';
+            
+            setTimeout(() => {
+                annotationDiv.style.transition = 'all 0.5s ease-out';
+                annotationDiv.style.opacity = '1';
+                annotationDiv.style.transform = 'scale(1)';
+            }, 100);
         }
         
-        // Clear chart
-        function clearChart() {
-            d3.select('#chart').selectAll('*').remove();
-        }
-        
-        // Create world map
-        async function createWorldMap() {
+        // ===== SCENE SETUP FUNCTIONS =====
+        function setupScene1() {
             const width = 800;
             const height = 500;
+            const margin = {top: 20, right: 30, bottom: 60, left: 60};
             
             const svg = d3.select('#chart')
                 .append('svg')
@@ -337,7 +395,7 @@
                 .attr('height', height);
             
             // Get latest data for each country
-            const latestData = d3.group(data, d => d.country);
+            const latestData = d3.group(narrativeState.data, d => d.country);
             const countryData = Array.from(latestData, ([country, values]) => ({
                 country: country,
                 lifeExpectancy: d3.max(values, d => d.lifeExpectancy),
@@ -346,47 +404,26 @@
             }));
             
             // Create a simple world map using circles for countries
-            const projection = d3.geoMercator()
-                .fitSize([width, height], {type: "FeatureCollection", features: []});
-            
-            // Create tooltip
-            const tooltip = d3.select('body').append('div')
-                .attr('class', 'tooltip')
-                .style('opacity', 0);
-            
-            // Create circles for each country
             const circles = svg.selectAll('circle')
                 .data(countryData)
                 .enter()
                 .append('circle')
                 .attr('cx', (d, i) => 100 + (i % 20) * 35)
                 .attr('cy', (d, i) => 100 + Math.floor(i / 20) * 35)
-                .attr('r', d => Math.sqrt(d.lifeExpectancy) * 2)
-                .attr('fill', d => colorScales.lifeExpectancy(d.lifeExpectancy))
+                .attr('r', 0) // Start with radius 0 for animation
+                .attr('fill', d => narrativeState.colorScales.lifeExpectancy(d.lifeExpectancy))
                 .attr('stroke', '#fff')
                 .attr('stroke-width', 1)
                 .style('cursor', 'pointer')
-                .on('mouseover', function(event, d) {
-                    tooltip.transition()
-                        .duration(200)
-                        .style('opacity', .9);
-                    tooltip.html(`
-                        <strong>${d.country}</strong><br/>
-                        Life Expectancy: ${d.lifeExpectancy.toFixed(1)} years<br/>
-                        Status: ${d.status}<br/>
-                        GDP: $${d.gdp.toLocaleString()}
-                    `)
-                        .style('left', (event.pageX + 10) + 'px')
-                        .style('top', (event.pageY - 28) + 'px');
-                })
-                .on('mouseout', function() {
-                    tooltip.transition()
-                        .duration(500)
-                        .style('opacity', 0);
-                })
                 .on('click', function(event, d) {
-                    drillDownToCountry(d.country);
+                    highlightCountry(d.country);
                 });
+            
+            // Animate circles appearing
+            circles.transition()
+                .duration(narrativeState.animationSpeed)
+                .delay((d, i) => i * 20)
+                .attr('r', d => Math.sqrt(d.lifeExpectancy) * 2);
             
             // Add legend
             const legend = svg.append('g')
@@ -415,11 +452,11 @@
             
             gradient.append('stop')
                 .attr('offset', '0%')
-                .attr('stop-color', colorScales.lifeExpectancy(40));
+                .attr('stop-color', narrativeState.colorScales.lifeExpectancy(40));
             
             gradient.append('stop')
                 .attr('offset', '100%')
-                .attr('stop-color', colorScales.lifeExpectancy(85));
+                .attr('stop-color', narrativeState.colorScales.lifeExpectancy(85));
             
             legend.append('rect')
                 .attr('width', 100)
@@ -432,8 +469,7 @@
                 .text('Life Expectancy');
         }
         
-        // Create scatter plot
-        function createScatterPlot() {
+        function setupScene2() {
             const width = 800;
             const height = 500;
             const margin = {top: 20, right: 30, bottom: 60, left: 60};
@@ -444,13 +480,12 @@
                 .attr('height', height);
             
             // Get latest data for each country
-            const latestData = d3.group(data, d => d.country);
+            const latestData = d3.group(narrativeState.data, d => d.country);
             const countryData = Array.from(latestData, ([country, values]) => ({
                 country: country,
                 lifeExpectancy: d3.max(values, d => d.lifeExpectancy),
                 status: values[0].status,
-                gdp: d3.max(values, d => d.gdp),
-                schooling: d3.max(values, d => d.schooling)
+                gdp: d3.max(values, d => d.gdp)
             }));
             
             const x = d3.scaleLinear()
@@ -484,38 +519,25 @@
                 .style('text-anchor', 'middle')
                 .text('Life Expectancy (years)');
             
-            // Add dots
-            const tooltip = d3.select('body').append('div')
-                .attr('class', 'tooltip')
-                .style('opacity', 0);
-            
-            svg.selectAll('circle')
+            // Add dots with animation
+            const dots = svg.selectAll('circle')
                 .data(countryData)
                 .enter()
                 .append('circle')
                 .attr('cx', d => x(d.gdp))
                 .attr('cy', d => y(d.lifeExpectancy))
-                .attr('r', 5)
-                .attr('fill', d => colorScales.development(d.status))
+                .attr('r', 0)
+                .attr('fill', d => narrativeState.colorScales.development(d.status))
                 .style('cursor', 'pointer')
-                .on('mouseover', function(event, d) {
-                    tooltip.transition()
-                        .duration(200)
-                        .style('opacity', .9);
-                    tooltip.html(`
-                        <strong>${d.country}</strong><br/>
-                        Life Expectancy: ${d.lifeExpectancy.toFixed(1)} years<br/>
-                        GDP: $${d.gdp.toLocaleString()}<br/>
-                        Status: ${d.status}
-                    `)
-                        .style('left', (event.pageX + 10) + 'px')
-                        .style('top', (event.pageY - 28) + 'px');
-                })
-                .on('mouseout', function() {
-                    tooltip.transition()
-                        .duration(500)
-                        .style('opacity', 0);
+                .on('click', function(event, d) {
+                    highlightCountry(d.country);
                 });
+            
+            // Animate dots appearing
+            dots.transition()
+                .duration(narrativeState.animationSpeed)
+                .delay((d, i) => i * 50)
+                .attr('r', 5);
             
             // Add legend
             const legend = svg.append('g')
@@ -529,7 +551,7 @@
                 
                 legendItem.append('circle')
                     .attr('r', 5)
-                    .attr('fill', colorScales.development(status));
+                    .attr('fill', narrativeState.colorScales.development(status));
                 
                 legendItem.append('text')
                     .attr('x', 15)
@@ -538,113 +560,7 @@
             });
         }
         
-        // Create line chart
-        function createLineChart() {
-            const width = 800;
-            const height = 500;
-            const margin = {top: 20, right: 30, bottom: 60, left: 60};
-            
-            const svg = d3.select('#chart')
-                .append('svg')
-                .attr('width', width)
-                .attr('height', height);
-            
-            // Aggregate data by year and status
-            const yearData = d3.group(data, d => d.year, d => d.status);
-            const lineData = Array.from(yearData, ([year, statusGroups]) => {
-                const result = {year: year};
-                statusGroups.forEach((values, status) => {
-                    result[status] = d3.mean(values, d => d.lifeExpectancy);
-                });
-                return result;
-            }).sort((a, b) => a.year - b.year);
-            
-            const x = d3.scaleLinear()
-                .domain(d3.extent(lineData, d => d.year))
-                .range([margin.left, width - margin.right]);
-            
-            const y = d3.scaleLinear()
-                .domain([0, d3.max(lineData, d => Math.max(d.Developed || 0, d.Developing || 0))])
-                .range([height - margin.bottom, margin.top]);
-            
-            // Add axes
-            svg.append('g')
-                .attr('transform', `translate(0,${height - margin.bottom})`)
-                .call(d3.axisBottom(x).tickFormat(d3.format('d')));
-            
-            svg.append('g')
-                .attr('transform', `translate(${margin.left},0)`)
-                .call(d3.axisLeft(y));
-            
-            // Add axis labels
-            svg.append('text')
-                .attr('x', width / 2)
-                .attr('y', height - 10)
-                .style('text-anchor', 'middle')
-                .text('Year');
-            
-            svg.append('text')
-                .attr('transform', 'rotate(-90)')
-                .attr('x', -height / 2)
-                .attr('y', 15)
-                .style('text-anchor', 'middle')
-                .text('Life Expectancy (years)');
-            
-            // Create line generator
-            const line = d3.line()
-                .x(d => x(d.year))
-                .y(d => y(d.value));
-            
-            // Add lines for each status
-            const statuses = ['Developed', 'Developing'];
-            statuses.forEach(status => {
-                const statusData = lineData.filter(d => d[status] !== undefined)
-                    .map(d => ({year: d.year, value: d[status]}));
-                
-                svg.append('path')
-                    .datum(statusData)
-                    .attr('fill', 'none')
-                    .attr('stroke', colorScales.development(status))
-                    .attr('stroke-width', 3)
-                    .attr('d', line);
-                
-                // Add dots
-                svg.selectAll(`.dot-${status}`)
-                    .data(statusData)
-                    .enter()
-                    .append('circle')
-                    .attr('class', `dot-${status}`)
-                    .attr('cx', d => x(d.year))
-                    .attr('cy', d => y(d.value))
-                    .attr('r', 4)
-                    .attr('fill', colorScales.development(status));
-            });
-            
-            // Add legend
-            const legend = svg.append('g')
-                .attr('transform', `translate(${width - 100}, 20)`);
-            
-            statuses.forEach((status, i) => {
-                const legendItem = legend.append('g')
-                    .attr('transform', `translate(0, ${i * 25})`);
-                
-                legendItem.append('line')
-                    .attr('x1', 0)
-                    .attr('x2', 20)
-                    .attr('y1', 0)
-                    .attr('y2', 0)
-                    .attr('stroke', colorScales.development(status))
-                    .attr('stroke-width', 3);
-                
-                legendItem.append('text')
-                    .attr('x', 25)
-                    .attr('y', 5)
-                    .text(status);
-            });
-        }
-        
-        // Create multi-scatter plot
-        function createMultiScatter() {
+        function setupScene3() {
             const width = 800;
             const height = 500;
             const margin = {top: 20, right: 30, bottom: 60, left: 60};
@@ -655,11 +571,10 @@
                 .attr('height', height);
             
             // Get latest data for each country
-            const latestData = d3.group(data, d => d.country);
+            const latestData = d3.group(narrativeState.data, d => d.country);
             const countryData = Array.from(latestData, ([country, values]) => ({
                 country: country,
                 lifeExpectancy: d3.max(values, d => d.lifeExpectancy),
-                gdp: d3.max(values, d => d.gdp),
                 schooling: d3.max(values, d => d.schooling),
                 bmi: d3.max(values, d => d.bmi),
                 status: values[0].status
@@ -696,255 +611,113 @@
                 .style('text-anchor', 'middle')
                 .text('Life Expectancy (years)');
             
-            // Add dots
-            const tooltip = d3.select('body').append('div')
-                .attr('class', 'tooltip')
-                .style('opacity', 0);
-            
-            svg.selectAll('circle')
+            // Add dots with animation
+            const dots = svg.selectAll('circle')
                 .data(countryData)
                 .enter()
                 .append('circle')
                 .attr('cx', d => x(d.schooling))
                 .attr('cy', d => y(d.lifeExpectancy))
-                .attr('r', d => Math.sqrt(d.bmi) / 2)
-                .attr('fill', d => colorScales.development(d.status))
+                .attr('r', 0)
+                .attr('fill', d => narrativeState.colorScales.development(d.status))
                 .attr('opacity', 0.7)
                 .style('cursor', 'pointer')
-                .on('mouseover', function(event, d) {
-                    tooltip.transition()
-                        .duration(200)
-                        .style('opacity', .9);
-                    tooltip.html(`
-                        <strong>${d.country}</strong><br/>
-                        Life Expectancy: ${d.lifeExpectancy.toFixed(1)} years<br/>
-                        Schooling: ${d.schooling.toFixed(1)} years<br/>
-                        BMI: ${d.bmi.toFixed(1)}<br/>
-                        Status: ${d.status}
-                    `)
-                        .style('left', (event.pageX + 10) + 'px')
-                        .style('top', (event.pageY - 28) + 'px');
-                })
-                .on('mouseout', function() {
-                    tooltip.transition()
-                        .duration(500)
-                        .style('opacity', 0);
-                });
-        }
-        
-        // Create bar chart
-        function createBarChart() {
-            const width = 800;
-            const height = 500;
-            const margin = {top: 20, right: 30, bottom: 60, left: 60};
-            
-            const svg = d3.select('#chart')
-                .append('svg')
-                .attr('width', width)
-                .attr('height', height);
-            
-            // Get latest data for each country
-            const latestData = d3.group(data, d => d.country);
-            const countryData = Array.from(latestData, ([country, values]) => ({
-                country: country,
-                lifeExpectancy: d3.max(values, d => d.lifeExpectancy),
-                status: values[0].status
-            }));
-            
-            // Sort by life expectancy and get top/bottom 10
-            const sortedData = countryData.sort((a, b) => b.lifeExpectancy - a.lifeExpectancy);
-            const top10 = sortedData.slice(0, 10);
-            const bottom10 = sortedData.slice(-10).reverse();
-            
-            const chartData = [...top10, ...bottom10];
-            
-            const x = d3.scaleBand()
-                .domain(chartData.map(d => d.country))
-                .range([margin.left, width - margin.right])
-                .padding(0.1);
-            
-            const y = d3.scaleLinear()
-                .domain([0, d3.max(chartData, d => d.lifeExpectancy)])
-                .range([height - margin.bottom, margin.top]);
-            
-            // Add axes
-            svg.append('g')
-                .attr('transform', `translate(0,${height - margin.bottom})`)
-                .call(d3.axisBottom(x))
-                .selectAll('text')
-                .attr('transform', 'rotate(-45)')
-                .style('text-anchor', 'end');
-            
-            svg.append('g')
-                .attr('transform', `translate(${margin.left},0)`)
-                .call(d3.axisLeft(y));
-            
-            // Add axis labels
-            svg.append('text')
-                .attr('x', width / 2)
-                .attr('y', height - 10)
-                .style('text-anchor', 'middle')
-                .text('Country');
-            
-            svg.append('text')
-                .attr('transform', 'rotate(-90)')
-                .attr('x', -height / 2)
-                .attr('y', 15)
-                .style('text-anchor', 'middle')
-                .text('Life Expectancy (years)');
-            
-            // Add bars
-            const tooltip = d3.select('body').append('div')
-                .attr('class', 'tooltip')
-                .style('opacity', 0);
-            
-            svg.selectAll('rect')
-                .data(chartData)
-                .enter()
-                .append('rect')
-                .attr('x', d => x(d.country))
-                .attr('y', d => y(d.lifeExpectancy))
-                .attr('width', x.bandwidth())
-                .attr('height', d => height - margin.bottom - y(d.lifeExpectancy))
-                .attr('fill', d => colorScales.development(d.status))
-                .style('cursor', 'pointer')
-                .on('mouseover', function(event, d) {
-                    tooltip.transition()
-                        .duration(200)
-                        .style('opacity', .9);
-                    tooltip.html(`
-                        <strong>${d.country}</strong><br/>
-                        Life Expectancy: ${d.lifeExpectancy.toFixed(1)} years<br/>
-                        Status: ${d.status}
-                    `)
-                        .style('left', (event.pageX + 10) + 'px')
-                        .style('top', (event.pageY - 28) + 'px');
-                })
-                .on('mouseout', function() {
-                    tooltip.transition()
-                        .duration(500)
-                        .style('opacity', 0);
+                .on('click', function(event, d) {
+                    highlightCountry(d.country);
                 });
             
-            // Add divider line
-            svg.append('line')
-                .attr('x1', margin.left)
-                .attr('x2', width - margin.right)
-                .attr('y1', y(top10[9].lifeExpectancy))
-                .attr('y2', y(top10[9].lifeExpectancy))
-                .attr('stroke', '#e74c3c')
-                .attr('stroke-width', 2)
-                .attr('stroke-dasharray', '5,5');
-            
-            // Add labels
-            svg.append('text')
-                .attr('x', width - margin.right + 10)
-                .attr('y', y(top10[9].lifeExpectancy) + 5)
-                .text('Top 10')
-                .attr('fill', '#e74c3c');
-            
-            svg.append('text')
-                .attr('x', width - margin.right + 10)
-                .attr('y', y(bottom10[0].lifeExpectancy) - 5)
-                .text('Bottom 10')
-                .attr('fill', '#e74c3c');
+            // Animate dots appearing
+            dots.transition()
+                .duration(narrativeState.animationSpeed)
+                .delay((d, i) => i * 30)
+                .attr('r', d => Math.sqrt(d.bmi) / 2)
+                .attr('opacity', 0.7);
         }
         
-        // Drill down to country
-        function drillDownToCountry(country) {
-            selectedCountry = country;
-            currentView = 'country-detail';
+        // ===== HELPER FUNCTIONS =====
+        function highlightCountry(country) {
+            narrativeState.selectedCountry = country;
             
-            document.querySelector('.back-btn').style.display = 'block';
+            // Highlight the selected country
+            d3.selectAll('circle')
+                .transition()
+                .duration(300)
+                .attr('opacity', d => d.country === country ? 1 : 0.3)
+                .attr('stroke-width', d => d.country === country ? 3 : 1);
             
-            const countryData = data.filter(d => d.country === country);
-            
-            clearChart();
-            
-            const width = 800;
-            const height = 500;
-            const margin = {top: 20, right: 30, bottom: 60, left: 60};
-            
-            const svg = d3.select('#chart')
-                .append('svg')
-                .attr('width', width)
-                .attr('height', height);
-            
-            const x = d3.scaleLinear()
-                .domain(d3.extent(countryData, d => d.year))
-                .range([margin.left, width - margin.right]);
-            
-            const y = d3.scaleLinear()
-                .domain([0, d3.max(countryData, d => d.lifeExpectancy)])
-                .range([height - margin.bottom, margin.top]);
-            
-            // Add axes
-            svg.append('g')
-                .attr('transform', `translate(0,${height - margin.bottom})`)
-                .call(d3.axisBottom(x).tickFormat(d3.format('d')));
-            
-            svg.append('g')
-                .attr('transform', `translate(${margin.left},0)`)
-                .call(d3.axisLeft(y));
-            
-            // Add axis labels
-            svg.append('text')
-                .attr('x', width / 2)
-                .attr('y', height - 10)
-                .style('text-anchor', 'middle')
-                .text('Year');
-            
-            svg.append('text')
-                .attr('transform', 'rotate(-90)')
-                .attr('x', -height / 2)
-                .attr('y', 15)
-                .style('text-anchor', 'middle')
-                .text('Life Expectancy (years)');
-            
-            // Add line
-            const line = d3.line()
-                .x(d => x(d.year))
-                .y(d => y(d.lifeExpectancy));
-            
-            svg.append('path')
-                .datum(countryData)
-                .attr('fill', 'none')
-                .attr('stroke', '#3498db')
-                .attr('stroke-width', 3)
-                .attr('d', line);
-            
-            // Add dots
-            svg.selectAll('circle')
-                .data(countryData)
-                .enter()
-                .append('circle')
-                .attr('cx', d => x(d.year))
-                .attr('cy', d => y(d.lifeExpectancy))
-                .attr('r', 5)
-                .attr('fill', '#3498db');
-            
-            // Update story text
+            // Show country info
+            const countryData = narrativeState.data.filter(d => d.country === country);
             const latest = countryData[countryData.length - 1];
-            const earliest = countryData[0];
-            const change = latest.lifeExpectancy - earliest.lifeExpectancy;
             
-            document.getElementById('story-text').innerHTML = `
-                <h2>${country} - Life Expectancy Trend</h2>
-                <p>From ${earliest.year} to ${latest.year}, life expectancy in ${country} ${change > 0 ? 'increased' : 'decreased'} by ${Math.abs(change).toFixed(1)} years.</p>
-                <p>Current life expectancy: ${latest.lifeExpectancy.toFixed(1)} years</p>
-                <p>Development status: ${latest.status}</p>
-            `;
+            // Create or update info box
+            let infoBox = d3.select('#country-info');
+            if (infoBox.empty()) {
+                infoBox = d3.select('#chart').append('div')
+                    .attr('id', 'country-info')
+                    .style('position', 'absolute')
+                    .style('top', '20px')
+                    .style('right', '20px')
+                    .style('background', 'rgba(255,255,255,0.95)')
+                    .style('padding', '15px')
+                    .style('border-radius', '8px')
+                    .style('border', '2px solid #3498db')
+                    .style('max-width', '250px')
+                    .style('z-index', '1000');
+            }
+            
+            infoBox.html(`
+                <h3>${country}</h3>
+                <p><strong>Life Expectancy:</strong> ${latest.lifeExpectancy.toFixed(1)} years</p>
+                <p><strong>Status:</strong> ${latest.status}</p>
+                <p><strong>GDP:</strong> $${latest.gdp.toLocaleString()}</p>
+                <p><strong>Schooling:</strong> ${latest.schooling.toFixed(1)} years</p>
+            `);
         }
         
-        // Go back function
-        function goBack() {
-            selectedCountry = null;
-            currentView = currentStory;
-            document.querySelector('.back-btn').style.display = 'none';
-            showStory(currentStory);
+        // ===== INITIALIZATION =====
+        async function loadData() {
+            try {
+                const csvData = await d3.csv('LifeExpectancyData/Life Expectancy Data.csv');
+                
+                // Clean and process data
+                narrativeState.data = csvData.map(d => ({
+                    country: d.Country,
+                    year: +d.Year,
+                    status: d.Status,
+                    lifeExpectancy: +d['Life expectancy '] || 0,
+                    adultMortality: +d['Adult Mortality'] || 0,
+                    infantDeaths: +d['infant deaths'] || 0,
+                    alcohol: +d.Alcohol || 0,
+                    percentageExpenditure: +d['percentage expenditure'] || 0,
+                    hepatitisB: +d['Hepatitis B'] || 0,
+                    measles: +d['Measles '] || 0,
+                    bmi: +d[' BMI '] || 0,
+                    underFiveDeaths: +d['under-five deaths '] || 0,
+                    polio: +d.Polio || 0,
+                    totalExpenditure: +d['Total expenditure'] || 0,
+                    diphtheria: +d['Diphtheria '] || 0,
+                    hivAids: +d[' HIV/AIDS'] || 0,
+                    gdp: +d.GDP || 0,
+                    population: +d.Population || 0,
+                    thinness1_19: +d[' thinness  1-19 years'] || 0,
+                    thinness5_9: +d[' thinness 5-9 years'] || 0,
+                    incomeComposition: +d['Income composition of resources'] || 0,
+                    schooling: +d.Schooling || 0
+                })).filter(d => d.lifeExpectancy > 0);
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                // Initialize first scene
+                updateScene();
+                updateNavigation();
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('loading').innerHTML = 'Error loading data. Please check the file path.';
+            }
         }
         
-        // Initialize the application
+        // Start the narrative visualization
         loadData();
     </script>
 </body>
