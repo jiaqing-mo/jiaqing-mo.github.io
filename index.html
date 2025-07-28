@@ -321,10 +321,12 @@
                             <option value="">-- Select a trend --</option>
                             <option value="life-expectancy">Life Expectancy Trend</option>
                             <option value="schooling">Schooling Trend</option>
+                            <option value="gdp">GDP Trend</option>
                         </select>
                     </div>
                     <div id="life-expectancy-chart" class="detail-chart chart-container scene-transition"></div>
                     <div id="schooling-chart" class="detail-chart chart-container scene-transition" style="display: none;"></div>
+                    <div id="gdp-chart" class="detail-chart chart-container scene-transition" style="display: none;"></div>
                 </div>
             </div>
         </div>
@@ -349,14 +351,14 @@
             {
                 id: 'developed-countries',
                 text: 'Developed countries show consistently higher life expectancy',
-                position: { x: 650, y: 380 },
+                position: { x: 650, y: 80 },
                 arrow: 'left',
                 highlight: true
             },
             {
                 id: 'developing-gap',
                 text: 'Developing countries face significant challenges',
-                position: { x: 650, y: 410 },
+                position: { x: 650, y: 150 },
                 arrow: 'left',
                 highlight: true
             }
@@ -380,14 +382,17 @@
             const chartContainer = document.getElementById('chart');
             const lifeExpectancyChart = document.getElementById('life-expectancy-chart');
             const schoolingChart = document.getElementById('schooling-chart');
+            const gdpChart = document.getElementById('gdp-chart');
             const detailCharts = document.querySelector('.detail-charts');
             
             chartContainer.innerHTML = '';
             lifeExpectancyChart.innerHTML = '';
             schoolingChart.innerHTML = '';
+            gdpChart.innerHTML = '';
             chartContainer.classList.remove('active');
             lifeExpectancyChart.classList.remove('active');
             schoolingChart.classList.remove('active');
+            gdpChart.classList.remove('active');
             
             // Hide the detail charts container
             detailCharts.style.display = 'none';
@@ -400,6 +405,7 @@
                 chartContainer.classList.add('active');
                 lifeExpectancyChart.classList.add('active');
                 schoolingChart.classList.add('active');
+                gdpChart.classList.add('active');
             }, 50);
         }
         
@@ -685,6 +691,83 @@
                 .text(`${country} - Schooling Trend`);
         }
         
+        function createGDPChart(country) {
+            const width = 500;
+            const height = 280;
+            const margin = {top: 20, right: 30, bottom: 60, left: 60};
+            
+            const svg = d3.select('#gdp-chart')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // Get data for the selected country
+            const countryData = narrativeState.data.filter(d => d.country === country);
+            
+            if (countryData.length === 0) return;
+            
+            const x = d3.scaleLinear()
+                .domain(d3.extent(countryData, d => d.year))
+                .range([margin.left, width - margin.right]);
+            
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(countryData, d => d.gdp) * 1.1])
+                .range([height - margin.bottom, margin.top]);
+            
+            // Add axes
+            svg.append('g')
+                .attr('transform', `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(x).tickFormat(d3.format('d')));
+            
+            svg.append('g')
+                .attr('transform', `translate(${margin.left},0)`)
+                .call(d3.axisLeft(y).tickFormat(d => '$' + d3.format('.0s')(d)));
+            
+            // Add axis labels
+            svg.append('text')
+                .attr('x', width / 2)
+                .attr('y', height - 10)
+                .style('text-anchor', 'middle')
+                .text('Year');
+            
+            svg.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', 15)
+                .style('text-anchor', 'middle')
+                .text('GDP per capita');
+            
+            // Add line
+            const line = d3.line()
+                .x(d => x(d.year))
+                .y(d => y(d.gdp));
+            
+            svg.append('path')
+                .datum(countryData)
+                .attr('fill', 'none')
+                .attr('stroke', '#27ae60')
+                .attr('stroke-width', 3)
+                .attr('d', line);
+            
+            // Add dots
+            svg.selectAll('circle')
+                .data(countryData)
+                .enter()
+                .append('circle')
+                .attr('cx', d => x(d.year))
+                .attr('cy', d => y(d.gdp))
+                .attr('r', 4)
+                .attr('fill', '#27ae60');
+            
+            // Add title
+            svg.append('text')
+                .attr('x', width / 2)
+                .attr('y', 15)
+                .style('text-anchor', 'middle')
+                .style('font-weight', 'bold')
+                .text(`${country} - GDP Trend`);
+        }
+        
         // ===== HELPER FUNCTIONS =====
         function highlightCountry(country) {
             if (!country) return; // Guard against undefined country
@@ -705,11 +788,13 @@
             // Update country statistics
             updateCountryStats(country);
             
-            // Clear and create both detail charts
+            // Clear and create all detail charts
             d3.select('#life-expectancy-chart').html('');
             d3.select('#schooling-chart').html('');
+            d3.select('#gdp-chart').html('');
             createLifeExpectancyChart(country);
             createSchoolingChart(country);
+            createGDPChart(country);
             
             // Show the currently selected chart type
             updateDetailChart();
@@ -737,17 +822,25 @@
             const selector = document.getElementById('trend-selector');
             const lifeExpectancyChart = document.getElementById('life-expectancy-chart');
             const schoolingChart = document.getElementById('schooling-chart');
+            const gdpChart = document.getElementById('gdp-chart');
             
             if (selector.value === 'life-expectancy') {
                 lifeExpectancyChart.style.display = 'block';
                 schoolingChart.style.display = 'none';
+                gdpChart.style.display = 'none';
             } else if (selector.value === 'schooling') {
                 lifeExpectancyChart.style.display = 'none';
                 schoolingChart.style.display = 'block';
-            } else {
-                // Hide both charts when no option is selected
+                gdpChart.style.display = 'none';
+            } else if (selector.value === 'gdp') {
                 lifeExpectancyChart.style.display = 'none';
                 schoolingChart.style.display = 'none';
+                gdpChart.style.display = 'block';
+            } else {
+                // Hide all charts when no option is selected
+                lifeExpectancyChart.style.display = 'none';
+                schoolingChart.style.display = 'none';
+                gdpChart.style.display = 'none';
             }
         }
         
